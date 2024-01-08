@@ -1,3 +1,4 @@
+create database if not exists walmart.sales;
 
 create table Wsales(
 invoice_id VARCHAR(30) NOT NULL PRIMARY KEY,
@@ -27,7 +28,16 @@ select time,
         ELSE "Evening"
      END
      )AS time_of_date from wsales;
+
 SET SQL_SAFE_UPDATES = 0;
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------Feature Engineering--------------------------------------------------------------------
+
+
+-------------------time of day:
+
+
  ALTER TABLE wsales ADD COLUMN time_of_day  VARCHAR(20);
  UPDATE wsales SET time_of_day=
           (CASE
@@ -36,45 +46,52 @@ SET SQL_SAFE_UPDATES = 0;
         ELSE "Evening"
      END
      );
-  
- -- -------DAY_NAME 
+ 
+
+-- ------------------DAY_NAME:
   
    ALTER TABLE wsales ADD COLUMN day_name  VARCHAR(20);
    UPDATE wsales SET day_name=
     DAYNAME(date);
     
----- -----MONTH_NAME
+---------------------MONTH_NAME:
 
   ALTER TABLE wsales ADD COLUMN month_name  VARCHAR(20); 
   UPDATE wsales SET month_name=
     MONTHNAME(date);
-    
--------- -----------------------------------------------------------------------------    
------ -----GENERIC QUESTIONS----------------------------------------------------------
--- Q1:
+
+
+-------- ---------------------------------------------------------------------------------------------------------------------------------    
+----- -----GENERIC QUESTIONS--------------------------------------------------------------------------------------------------------------
+
+-- Q1:How many unique cities does the data have?
 
 SELECT DISTINCT city FROM wsales;
 
 SELECT DISTINCT branch FROM wsales;
--- Q2:
+
+-- Q2:In which city is each branch?
 
 SELECT DISTINCT city,branch FROM wsales;
 
+
 ----------- --------------------------------------------------------------------------
 -------- -------PRODUCT ANALYSIS------------------------------------------------------
--- --Q1:
+
+-- --Q1:How many unique product lines does the data have?
+
 
 SELECT DISTINCT 
 count(product_line) from wsales;
 
 
--- ---Q2:
+-- ---Q2:What is the most common payment method?
 
 SELECT payment_method,count(payment_method) as cnt from wsales 
 group by payment_method
 order by cnt desc;
 
--- ---Q3:
+-- ---Q3:What is the most selling product line?
 
 select product_line ,count(product_line) as cnt
 from wsales
@@ -82,14 +99,18 @@ group by product_line
 order by cnt desc;
 -- answer: Fashion accessories.---
 
--- ---Q4:
+-- ---Q4:What is the total revenue by month?
+
 SELECT month_name as month,
 sum(total) AS total_revenue
 FROM wsales GROUP BY month_name
 ORDER BY total_revenue desc; 
 -- ----ans:January(total_revenue=116291.8680)
 
--- ---Q5:
+
+-- ---Q5:Which month has the largest COGS?
+
+
 SELECT month_name as month,
 SUM(cogs) as cogs from wsales
 GROUP BY month_name
@@ -97,7 +118,8 @@ ORDER BY cogs desc;
 
 -- --ans:January(cogs=110754.16)
 
--- ---Q6:
+
+-- ---Q6:Which product line had the largest revenue?
 
 SELECT product_line,
 sum(total) as total_revenue
@@ -108,8 +130,8 @@ ORDER BY total_revenue desc;
 -- --ans:Food and beverages(total_revenue=56144.8440)
 
 
+-- --Q7:what is the city with the ;argest revenue?
 
--- --Q7:
 SELECT branch,city,
 SUM(total) as total_revenue 
 FROM wsales
@@ -117,7 +139,8 @@ GROUP BY branch,city
 ORDER BY total_revenue desc;
 
 -- --ans:Naypyitaw(total_revenue=110490.7755)
--- --Q8:
+
+-- --Q8:What product line had the largest VAT?
 
 SELECT product_line,
 AVG(vat) as avg_tax
@@ -127,7 +150,6 @@ ORDER BY avg_tax desc;
 
 -- --ans:Home and lifestyle(avg_tax=16.03033124)
 
--- --Q9:
 
 SELECT branch,
 avg(quantity) as qty
@@ -137,7 +159,23 @@ HAVING SUM(quantity)>(SELECT AVG(quantity)
 FROM wsales);
 
 -- --ans:branch(qty=5.4543)
--- ----Q10:
+
+
+-- ----Q9:Which branch sold more products than average product sold?
+
+
+SELECT branch,
+avg(quantity) as qty
+FROM wsales
+GROUP BY branch
+HAVING SUM(quantity)>(SELECT AVG(quantity)
+FROM wsales);
+
+-- --ans:female(Fashion accessories,count=96)
+
+
+-- --Q10:what is the most common product line by gender?
+
 
 SELECT gender,product_line,
 count(gender) as total_cnt
@@ -145,9 +183,10 @@ from wsales
 group by gender,product_line
 order by total_cnt desc;
 
--- --ans:female(Fashion accessories,count=96)
 
--- --Q11:
+
+-- --Q11:What is the average rating of each product line?
+
 
 SELECT product_line,
 AVG(rating) AS avg_rating
@@ -155,14 +194,13 @@ FROM wsales
 GROUP BY product_line
 ORDER BY avg_rating desc;
 
--- --Q12:
-
 
 ------- -- -------------------------------------------------------------------------
 ----- --SALES-----------------------:-- --------------------------------------------
 
 
--- -Q1:
+-- -Q1:No of Sales made in each time of the day per weekend?
+
 SELECT 
    time_of_day,
    count(*) AS total_sales
@@ -172,7 +210,8 @@ ORDER BY total_sales desc;
 
 -- ------ans:Evening(total sales:429)
 
--- --Q2:
+-- --Q2:Which of the customer types brings the most revenue?
+
 SELECT customer_type,
 SUM(total) AS total_rev
 FROM wsales
@@ -180,7 +219,9 @@ GROUP BY customer_type
 ORDER BY total_rev desc;
 
 -- --ans:Member(total_rev=163625.1015)
--- Q3.
+
+-- Q3:Which city has the largest tax percent/VAT(value added tax)?
+
 SELECT city,
 AVG(VAT) AS VAT
 FROM wsales
@@ -188,7 +229,9 @@ GROUP BY city
 ORDER BY VAT DESC;
 
 -- ---ans:Naypyitaw (vat=16.090..)
--- --Q4:
+
+-- --Q4:Which customer type pays the most in VAT?
+
 SELECT customer_type,
 AVG(VAT) AS avg_vat
 FROM wsales
@@ -274,7 +317,7 @@ ORDER BY avg_rating DESC;
 
 -- -ans:Monday(avg_rating=7.13)
 
--- -Q10:which day of the week has the best avg ratings ?
+-- -Q10:which day of the week has the best avg ratings for branch "B"?
 
 SELECT time_of_day,
 AVG(rating) AS avg_rating
